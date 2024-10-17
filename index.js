@@ -1,55 +1,55 @@
-//Take the select statements from the database and use them to get the data.
-//Send the data out through a spreadsheet.
+import Database from "better-sqlite3";
+import {parseCSV} from "./parseCSV.js";
 
-import { parse } from 'csv-parse/sync'
-import {readFileSync} from 'node:fs'
-import sqlite3 from 'sqlite3'
+const db = new Database("./hikerbase.db", { fileMustExist: false });
 
-const input = readFileSync("C:/Users/asajk/Downloads/2024-S3-Foodshack Report.csv");
+db.exec(
+  `CREATE TABLE IF NOT EXISTS Restrictions (
+    restriction_id INTEGER PRIMARY KEY,
+    restriction_name TEXT
+  )`
+);
 
-const parsed_input = parse(input, {
-    columns:true
-})
+db.exec(
+  `CREATE TABLE IF NOT EXISTS HikerRestrictions (
+    hiker_id INTEGER,
+    restriction_id INTEGER,
+    PRIMARY KEY (hiker_id, restriction_id)
+  )`
+);
 
+db.exec(
+  `CREATE TABLE IF NOT EXISTS Hikers (
+    hiker_id INTEGER PRIMARY KEY,
+    first_name TEXT,
+    last_name TEXT
+  )`
+);
 
-const db = new sqlite3.Database('./Hikerbase.db');
+const addHiker = db.prepare(`
+  INSERT INTO Hikers (first_name, last_name) VALUES (:firstName, :lastName)
+`);
 
-let HikerInsertSQL = 'INSERT INTO Hikers (first_name, last_name) VALUES (?,?)'
-const HikerInsertStmt = db.prepare(HikerInsertSQL);
+const addRestriction = db.prepare(`
+  INSERT INTO Restrictions (restriction_name) VALUES (:restrictionName)
+`);
 
-let RestrictionsSQL = 'INSERT INTO Restrictions(restriction_type) VALUES(?)'
-const RestrictionsStmt = db.prepare(RestrictionsSQL);
-RestrictionsStmt.run("No Red Meat");
-RestrictionsStmt.run("No Pork");
-RestrictionsStmt.run("No Poultry");
-RestrictionsStmt.run("No Seafood");
-console.log(RestrictionsStmt.run("No Eggs"));
+const addHikerRestriction = db.prepare(`
+  INSERT INTO HikerRestrictions (hiker_id, restriction_id) VALUES (:hikerId, :restrictionId)
+`);
 
-//let HikerRestrictionStmt = 'INSERT INTO HikerRestriction (hiker_id, restriction_id) SELECT hiker
-//db.run()
+parseCSV("C:\\Users\\Asa Kohn\\Downloads\\2024-S3-Foodshack Report.csv", addHiker, addRestriction, addHikerRestriction);
 
+const whoCantEat = db.prepare(
+  `SELECT first_name, last_name FROM Hikers
+JOIN hikerRestrictions ON hikerRestrictions.hiker_id = Hikers.hiker_id
+JOIN restrictions ON restrictions.restriction_id = hikerRestrictions.restriction_id
+WHERE restrictions.restriction_name LIKE ?`
+);
 
-for(const camper of parsed_input){
-    const CamperFirstName = camper['First Name'];
-    const CamperLastName = camper['Last Name'];
-    const RedMeat = !camper['(Diet & Activity / Dieta y actividad) Red Meat'] === 'yes';
-    const Pork = !camper['(Diet & Activity / Dieta y actividad) Pork'] === 'yes';
-    const Poultry = !camper['(Diet & Activity / Dieta y actividad) Poultry'] === 'yes';
-    const Seafood = !camper['(Diet & Activity / Dieta y actividad) Seafood'] === 'yes';
-    const Eggs = !camper['(Diet & Activity / Dieta y actividad) Eggs'] === 'yes';
-    const AnyOther = camper['(Diet & Activity / Dieta y actividad) Any other dietary restrictions or food allergies?'] === 'yes';
-    if(AnyOther){
-        const Other = camper['(Diet & Activity / Dieta y actividad) Please specify'];
-    }
-    const Allergies = camper['Food Allergies'];
+whoCantEat
+  .all("Red Meat")
+  .map((h) => console.log(`${h.first_name} ${h.last_name} can not eat Red Meat`)
+  )
 
-    if(RedMeat){  }
-
-
-    HikerInsertStmt.run(CamperFirstName, CamperLastName);
-    break;
-}
-
-
-// console.log(parsed_input)
-// console.log("Hello World")
+db.close();
