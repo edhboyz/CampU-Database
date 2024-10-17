@@ -1,0 +1,26 @@
+{
+  "name": "campu-database",
+  "version": "1.0.0",
+  "description": "The project manages camper lists for a summer camp.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/edhboyz/CampU-Database.git"
+  },
+  "author": "Asa Kohn, Tavi Kohn",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/edhboyz/CampU-Database/issues"
+  },
+  "homepage": "https://github.com/edhboyz/CampU-Database#readme",
+  "dependencies": {
+    "better-sqlite3": "^11.3.0",
+    "csv": "^6.3.10",
+    "sqlite3": "^5.1.7"
+  }
+}
